@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hello React</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script type="text/jsx">
+		// Your code here
+		var Comment = React.createClass({
+			complete:function(e){
+				var tempText = $(e.target).siblings('label').text();
+				this.props.onComp(tempText);
+			},
+			modify:function(e){
+				if (e.keyCode === 13){
+					var befValue = $(e.target).attr('value');
+					$(e.target).attr('contentEditable',false);
+					var curValue = $(e.target).text();
+					this.props.onMod(befValue,curValue);
+				}
+			},
+			setEdit:function(e){
+				$(e.target).attr('contentEditable',true);
+			},
+			selectRadio:function(e){
+				if ($(e.target).attr('checked')){
+					$(e.target).siblings('label').css("text-decoration","none");
+					$(e.target).removeAttr('checked');
+					this.props.onLen(1);
+				}
+				else{
+					$(e.target).siblings('label').css("text-decoration","line-through");
+					$(e.target).attr('checked','checked');
+					this.props.onLen(-1);
+				}
+			},
+			render:function(){
+				return (
+					<div>
+						<input type="radio" onClick={this.selectRadio} />
+						<label contentEditable="true" onKeyDown={this.modify} value={this.props.flag} onMouseEnter={this.setEdit}>
+							{this.props.comm}
+						</label>
+						<button onClick={this.complete}>
+							done
+						</button>
+					</div>
+				);
+			}
+		});
+		var CommentList = React.createClass({
+			getInitialState: function() {
+				return {length: this.props.data.length};
+			},
+			haveDone:function(data){
+				var tempData = this.props.data;
+				for (var i=0;i<tempData.length;i++){
+					if (tempData[i].text === data)
+						break;
+				}
+				tempData.splice(i,1);
+				this.props.onDone(tempData);
+			},
+			setLength:function(i){
+				this.state.length += i;
+				this.setState();
+			},
+			haveMod:function(data1,data2){
+				var tempData = this.props.data;
+				tempData.splice(data1,1,{key:data1,text:data2});
+				this.props.onDone(tempData); 
+			},
+			clear:function(){
+				var tempData = this.props.data;
+				tempData.length=0;
+				this.props.onDone(tempData);
+			},
+			componentWillUpdate:function(){
+				this.state.length = this.props.data.length;
+			},
+			render:function(){
+				var rotate = this.props.data.map(function(name){
+						return (
+							<Comment comm={name.text} onComp={this.haveDone} onMod={this.haveMod} onLen={this.setLength} flag={name.key}/>
+						);
+				}.bind(this));
+				if(this.props.data.length){
+					return (
+						<div>
+							<input type="radio" onClick={this.clear}/>Mark all as complete.
+							{rotate}
+							<label>There remain {this.state.length} things to be completed.</label>
+						</div>
+					);
+				}else{
+					return (
+						<div>
+							{rotate}
+						</div>
+					);
+				}
+			}
+		});
+
+		var CommentBox = React.createClass({
+			getInitialState: function() {
+				return {data: []};
+			},
+			setComments:function(){
+				var temp = React.findDOMNode(this.refs.things).value;
+				var tempData = this.state.data;
+				var i=tempData.length;
+				React.findDOMNode(this.refs.things).value='';
+				tempData.push({key:i,text:temp});
+				this.setState({data:tempData});
+			},
+			onDone:function(tempData){
+				this.setState({data:tempData});
+			},
+			render: function() {
+				return (
+					
+					<div className="commentBox">
+						<h3>To do list</h3>
+						<input type="text" placeholder="What need to be done." ref="things"/>
+						<button onClick={this.setComments}>sure</button>
+						<CommentList onDone={this.onDone} data={this.state.data} />
+					</div>
+				);
+			}
+		});
+
+		React.render(
+			<CommentBox />,
+			document.getElementById('content')
+		);
+    </script>
+  </body>
+</html>
