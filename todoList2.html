@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>To do lists</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.13.3/JSXTransformer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
+	<style>
+		.noBorder{border-left:0px;border-top:0px;border-right:0px;border-bottom:1px}
+		.toRight{margin-right:20px}
+		.midLine{text-decoration:line-through}
+	</style>
+  </head>
+  <body>
+    <div id="content"></div>
+    <script type="text/jsx">
+		// Your code here
+		var Comment = React.createClass({
+			getInitialState: function() {
+				return {value: this.props.comm,checked:this.props.selected};
+			},
+			complete:function(e){
+				var tempText = this.props.flag;
+				this.props.onComp(tempText);
+			},
+			modify:function(e){
+				if (e.keyCode === 13){
+					var befValue = this.props.flag;
+					var curValue = $(e.target).val();
+					$(e.target).blur();
+					this.props.onMod(befValue,curValue);
+				}
+			},
+			dataChanged:function(event){
+				this.setState({value: event.target.value});
+			},
+			setStyle:function(){
+				var name = 'checkbox' + this.props.flag;
+				var name2 = 'text'+this.props.flag;
+				$(this.refs[name].getDOMNode()).prop('checked',true);
+				$(this.refs[name2].getDOMNode()).css('text-decoration','line-through');
+			},
+			removeStyle:function(){
+				var name = 'checkbox' + this.props.flag;
+				var name2 = 'text'+this.props.flag;
+				$(this.refs[name].getDOMNode()).prop('checked',false);
+				$(this.refs[name2].getDOMNode()).css('text-decoration','none');
+			},
+			selectChange:function(e){
+				var loc = this.props.flag;
+				var name = 'checkbox' + this.props.flag;
+				if (!$(this.refs[name].getDOMNode()).prop('checked')){
+					$(e.target).siblings('input').css("text-decoration","none");
+					$(e.target).prop('checked',false);
+					this.props.onLen(1,loc);
+				}
+				else{
+					$(e.target).siblings('input').css("text-decoration","line-through");
+					$(e.target).prop('checked',true);
+					this.props.onLen(-1,loc);
+				}
+			},
+			render:function(){
+				var value = this.state.value;
+				var checked = this.state.checked;
+				var name = 'checkbox' + this.props.flag;
+				var name2 = 'text' + this.props.flag;
+				return (
+					<div>
+						<input type="checkBox" onClick={this.selectChange} ref={name}/>
+						<input type="text" onKeyDown={this.modify} value={value} onChange={this.dataChanged} ref={name2} className="noBorder"/>
+						<button onClick={this.complete}>
+							done
+						</button>
+					</div>
+				);
+			}
+		});
+		var CommentList = React.createClass({
+			getInitialState: function() {
+				return {length: this.props.data.length,selButton:[],isSelect:false};
+			},
+			haveDone:function(data){
+				var tempData = this.props.data;
+				for (var i=0;i<tempData.length;i++){
+					if (tempData[i].key === data){
+						tempData.splice(i,1);
+						break;
+					}
+				}
+				var tempItem = this.state.selButton;
+				for (var i=0;i<tempItem.length;i++){
+					if(tempItem[i] === data){
+						tempItem.splice(i,1);
+						break;
+					}
+				}
+				this.setState({length:tempData.length,selButton:tempItem});
+				this.props.onDone(tempData);
+			},
+			setLength:function(i,flag){
+				var tmpLength = this.state.length;
+				var selectItem = this.state.selButton;
+				tmpLength += i;
+				if (i === -1)
+					selectItem.push(flag);
+				else{
+					for (var j=0;j<selectItem.length;j++){
+						if (flag === selectItem[j]){
+							selectItem.splice(j,1);
+							break;
+						}
+					}
+				}
+				this.setState({length:tmpLength,selButton:selectItem});
+			},
+			haveMod:function(data1,data2){
+				var tempData = this.props.data;
+				for (var i=0;i<tempData.length;i++){
+					if (tempData[i].key === data1){
+						tempData.splice(i,1,{key:data1,text:data2});
+						break;	
+					}
+				}
+				this.props.onDone(tempData);
+			},
+			clear:function(){
+				var tempData = this.props.data;
+				var tempItem = this.state.selButton;
+				for (var i=0;i<tempItem.length;i++){
+					for(var j=0;j<tempData.length;j++){
+						if (tempData[j].key === tempItem[i]){
+							tempData.splice(j,1);
+						}
+					}
+				}
+				tempItem = [];
+				this.setState({length:tempData.length,selButton:tempItem});
+				this.props.onDone(tempData);
+			},
+			selectAll:function(event){
+				var tempItem = [];
+				if (!event.target.checked){
+					var tempData = this.props.data;
+					for (var i=0;i<tempData.length;i++){
+						var temp = 'comment' + tempData[i].key;
+						this.refs[temp].removeStyle();
+					}
+					this.setState({length:tempData.length,selButton:tempItem,isSelect:event.target.checked});
+				}else{
+					var tempData = this.props.data;
+					for (var i=0;i<tempData.length;i++){
+						tempItem.push(tempData[i].key);
+						var temp = 'comment' + tempData[i].key;
+						this.refs[temp].setStyle();
+						
+					}
+					this.setState({length:0,selButton:tempItem,isSelect:event.target.checked});
+				}
+			},
+			componentWillUpdate:function(){
+				this.state.length = this.props.data.length - this.state.selButton.length;
+			},
+			render:function(){
+				var checked = this.state.isSelect;
+				var rotate = this.props.data.map(function(name){
+						var temp = 'comment' + name.key;
+						return (
+							<Comment comm={name.text} ref={temp} onComp={this.haveDone} onMod={this.haveMod} onLen={this.setLength} key={name.key} flag={name.key}/>
+						);
+				}.bind(this));
+				if(this.props.data.length){
+					if (this.state.selButton.length){
+						return (
+							<div>
+								<input type="checkBox" checked={checked} onChange={this.selectAll} />Mark all as complete.
+									{rotate}
+								<label className="toRight">{this.state.length} items left.</label>
+								<button onClick={this.clear}>clear {this.state.selButton.length} completed items</button>
+							</div>
+						);
+					}
+					else{
+						return (
+							<div>
+								<input type="checkBox" checked={checked} onChange={this.selectAll}/>Mark all as complete.
+									{rotate}
+								<label>{this.state.length} items left.</label>
+							</div>
+						);
+					}
+				}else{
+					return (
+						<div>
+							{rotate}
+						</div>
+					);
+				}
+			}
+		});
+
+		var CommentBox = React.createClass({
+			getInitialState: function() {
+				return {data: [],loc:0};
+			},
+			setComments:function(){
+				var temp = React.findDOMNode(this.refs.things).value;
+				var tempData = this.state.data;
+				var tmpLoc = this.state.loc;
+				React.findDOMNode(this.refs.things).value='';
+				tempData.push({key:this.state.loc,text:temp});
+				this.setState({data:tempData,loc:tmpLoc+1});
+			},
+			onDone:function(tempData){
+				this.setState({data:tempData});
+			},
+			render: function() {
+				return (
+					
+					<div className="commentBox">
+						<h3>To do list</h3>
+						<input type="text" placeholder="What need to be done." ref="things"/>
+						<button onClick={this.setComments}>sure</button>
+						<CommentList onDone={this.onDone} data={this.state.data} />
+					</div>
+				);
+			}
+		});
+
+		React.render(
+			<CommentBox />,
+			document.getElementById('content')
+		);
+    </script>
+  </body>
+</html>
