@@ -56,7 +56,7 @@ var Header = React.createClass({
             <header>
                 <input ref="input" className="newTodo" placeholder="What needs to be done?" autofocus onKeyDown={this.handleKeyDown}/>
             </header>
-            );
+        );
     }
 });
 var Section = React.createClass({
