@@ -258,7 +258,7 @@ label[for='toggle-all'] {
     content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="3"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>');
 }
 
-.todo-list li label {
+.todo-list li .msg {
     white-space: pre-line;
     word-break: break-all;
     padding: 15px 60px 15px 15px;
@@ -266,9 +266,11 @@ label[for='toggle-all'] {
     display: block;
     line-height: 1.2;
     transition: color 0.4s;
+    border:none;
+    background:transparent;
 }
 
-.todo-list li.completed label {
+.todo-list li.completed .msg {
     color: #d9d9d9;
     text-decoration: line-through;
 }

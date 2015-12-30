@@ -5,10 +5,7 @@ var ContentBox = React.createClass({
     getInitialState: function() {
         return {
             data: [],
-            number:0,
-            isComplete:false,
-            isAll:true,
-            isActive:false
+            status:0//0表示全部 1 表示未完成 2 表示已完成
         };
     },
     addNewTodo:function(todo){
@@ -16,27 +13,18 @@ var ContentBox = React.createClass({
         data.push(todo);
         this.setState({
             data: data,
-            number:data.length
         });
     },
     deleteData:function(txt,flag){
           var data = this.state.data;
-          var num=this.state.number;
-          var k=0;
           data.forEach(function (comment, i) {
-              if (comment.author == txt) {
+              if (comment === txt) {
                   data.splice(i, 1);
               }
           })
-          for(var i=0;i<data.length;i++){
-              if(data[i].isChecked==false){
-                k++;
-              }
-          }
-          this.setState({data: data,number:k});
+          this.setState({data: data});
     },
     handleChange:function(content,flag,index){
-        var num=Number(this.state.number);
         var data=this.state.data;
         for(var i=0;i<data.length;i++){
           if(i==index){
@@ -50,22 +38,6 @@ var ContentBox = React.createClass({
         this.setState({
           data:data
         })
-        var conTxt={author:content};
-        if(flag){
-          num--;
-        }else{
-          num++;
-        }
-        this.setState({number:num});
-    },
-    showComplete:function(){
-      this.setState({isComplete:true,isAll:false,isActive:false})
-    },
-    showActive:function(){
-      this.setState({isComplete:false,isAll:false,isActive:true})
-    },
-    showAll:function(){
-      this.setState({isComplete:false,isAll:true,isActive:false})
     },
     clearCom:function(){
       var data=this.state.data;
@@ -81,12 +53,30 @@ var ContentBox = React.createClass({
       }
       this.setState({data:data});
     },
+    msgChange:function(msg,index){
+      var data=this.state.data;
+      data[index].context=msg;
+      this.setState({data:data});
+    },
+    changeStatus:function(s){
+      this.setState({status:s});
+    },
+    number:function(){
+      var data=this.state.data;
+      var num=0;
+      for(var i=0;i<data.length;i++){
+        if(data[i].isChecked==false){
+          num++;
+        }
+      }
+      return num;
+    },
     render: function(){
         return(
                 <div className="contentBox">
                     <Header ref="header" data={this.state.data} addNewTodo={this.addNewTodo}/>
-                    <Section data={this.state.data} deleteData={this.deleteData} handleChange={this.handleChange} isAll={this.state.isAll} isComplete={this.state.isComplete} isActive={this.state.isActive}/>
-                    <Footer number={this.state.number} CompleteClick={this.showComplete} ActiveClick={this.showActive} AllClick={this.showAll} Clear={this.clearCom}/>
+                    <Section data={this.state.data} deleteData={this.deleteData} handleChange={this.handleChange} msgChange ={this.msgChange} nowStatus={this.state.status} isAll={this.state.isAll} isComplete={this.state.isComplete} isActive={this.state.isActive}/>
+                    <Footer number={this.number()} CompleteClick={this.changeStatus.bind(this,2)} ActiveClick={this.changeStatus.bind(this,1)} AllClick={this.changeStatus.bind(this,0)} Clear={this.clearCom} changeStatus={this.changeStatus}/>
                 </div>
             )
     }
@@ -96,10 +86,10 @@ var Header = React.createClass({
         var key = e.which;
         var val= e.target.value;
         var date=new Date().getTime();
-        var txt={author:val,isChecked:false,id:date};
+        var txt={context:val,isChecked:false,id:date};
         if (key == 13) {
             e.preventDefault();
-           this.props.addNewTodo(txt);
+            this.props.addNewTodo(txt);
         }
     },
     render: function(){
@@ -112,40 +102,42 @@ var Header = React.createClass({
 });
 var Section = React.createClass({
     render:function(){
-        var d=this.props.deleteData;
-        var change=this.props.handleChange;
+        var cur=this;
         var flag=true;
-        var isAll=this.props.isAll;
-        var isComplete=this.props.isComplete;
-        var isActive=this.props.isActive;
         var todoNodes=this.props.data.map(function(comment, index){
             var style={};
             var deleteData=function(e){
-                d(comment.author);
+                cur.props.deleteData(comment);
             };
             var handleChange=function(e){
-                change(comment.author,e.target.checked,index);
+                cur.props.handleChange(comment.context,e.target.checked,index);
             };
+            var msgChange=function(e){
+              cur.props.msgChange(e.target.value,index)
+            }
             var s=comment.isChecked ? {color:"#ddd",textDecoration:"line-through"} : {};
-            if(isAll){
-              style={display:"block"}
-            }
-            if(isComplete){
-              style=comment.isChecked ? {display:"block"}:{display:"none"}
-            }
-            if(isActive){
-              style= comment.isChecked ? {display:"none"}:{display:"block"}
+            switch (cur.props.nowStatus) {
+              case 0:
+                style={display:"block"};
+                break;
+              case 1:
+                style= comment.isChecked ? {display:"none"}:{display:"block"};
+                break;
+              case 2:
+                style=comment.isChecked ? {display:"block"}:{display:"none"};
+                break;
+              default:
             }
             return(
                 <li key={comment.id} style={style}>
                     <div className="view">
                         <input className="toggle"  type="checkbox" onChange={handleChange} />
-                        <label style={s}>{comment.author}</label>
+                        <input type="text" style={s} value={comment.context} className="msg" onChange={msgChange}/>
                         <button className="destroy" onClick={deleteData}></button>
                     </div>
                 </li>
                 )
-        })
+        }.bind(this))
         return (
             <section className="main">
                 <ul className="todo-list">
@@ -160,7 +152,7 @@ var Footer = React.createClass({
         return (
             <footer className="footer">
                 <span className="todo-count">
-                    <strong ref="number">{this.props.number}</strong>
+                    <strong>{this.props.number}</strong>
                       items left
                 </span>
                 <ul className="filters">
